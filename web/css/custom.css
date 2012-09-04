@@ -1,0 +1,19 @@
+
+/* Fix for google maps */
+#map_canvas img {
+	max-width: 9999px;
+    margin: 0;
+    padding: 0;
+	height: 100%;
+}
+
+
+#ajaxLoader{
+	padding:4px;
+	display:none;
+	padding:4px;
+	width:32px;
+	height:32px;
+}
+
+#over_map { position: absolute; top: 10px; left: 10px; z-index: 99; }
