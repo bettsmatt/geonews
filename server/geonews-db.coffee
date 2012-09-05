@@ -14,7 +14,6 @@ schemaArticle = "(
     Suburb varchar(255),
     Title varchar(255),
     Body varchar(255),
-    Date varchar(255),
     Link varchar(255) 
 )"
 
@@ -29,11 +28,41 @@ connection.connect()
 
 console.log "Connected"
 
+
+
 connection.query "DROP DATABASE #{db}"
 connection.query "CREATE DATABASE #{db}"
 connection.query "CREATE TABLE #{db}.#{tblSearch}#{schemaSearch}"
 connection.query "CREATE TABLE #{db}.#{tblArticle}#{schemaArticle}"
 
+###
+connection.query "SELECT * FROM  #{db}.#{tblSearch} 
+        WHERE Suburb = 'wellington' AND Query = 'crime' ", (err, results) ->
+    if err
+        throw err
+    
+    # Found a cached match
+    console.log "Found #{results.length} matchs in database, Loading"
+
+###
+###
+connection.query "SELECT * FROM  #{db}.#{tblSearch} 
+        WHERE Suburb = 'wellington' AND Query = 'crime' ", (err, results) ->
+    if err 
+        throw err
+
+    console.log "Fetched #{results.length} Articles"
+
+
+###
+###
+connection.query "SELECT * FROM  #{db}.#{tblArticle} 
+        WHERE Suburb = 'crime' AND Query = 'wellington' ", (err, results) ->
+            if err 
+                throw err
+    
+            console.log "Fetched #{results.length} Articles"
+###
 console.log "Completed"
 
 connection.end()

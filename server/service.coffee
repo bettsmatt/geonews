@@ -66,49 +66,77 @@ search = (req, res, next) ->
     suburb = req.params[1]
     term = req.params[2]
 
-    console.log "Received Request for #{req.params[1]} & #{req.params[2]}, Checking database"
+    console.log "Received Request for #{req.params[1]} & #{req.params[2]}"
         
     # Check the database for a cached search
-    connection.query "SELECT * FROM  #{db}.#{tblSearch} WHERE Suburb = '#{suburb}' AND Query = '#{term}'", (err, results) ->
+    connection.query "SELECT * FROM  #{db}.#{tblSearch} 
+    WHERE Suburb = '#{suburb}' AND Query = '#{term}'", (err, searchResults) ->
         if err 
             throw err
         
-        if results > 0
-            console.log "Found match in database"
-    
-    
-    
-    jsdom.env
-        html: "https://www.google.co.nz/search?q=#{suburb}%20#{term}&as_sitesearch=stuff.co.nz"
-        src: [ jquery ]
-        done: (errors, window) ->
-
-            $ = window.$
-            results = $('#resultStats').text().split(" ")[1]
-            articles = []	
-
-            # Find each article
-            $(".g").each ->
-				
-                blurb = $(this).find(".st").text().split " ... " 
-                article =
-                    Title: $(this).find("h3").text().split(" | ")[0]
-                    Body: blurb[1]
-                    Date: blurb[0]
-                    Link: "http://www.google.co.nz" + $(this).find("a").attr("href")
-				
-                console.log $(this).find("h3").text().split(" | ")[0]
-                articles.push article
+        # Found a cached match
+        if searchResults.length > 0
+            console.log "Found match in database, Loading"
+            
+            # Pull out articles
+            connection.query "SELECT * FROM  #{db}.#{tblArticle} 
+            WHERE Suburb = '#{suburb}' AND Query = '#{term}'", (err, articleResults) ->
+                if err 
+                    throw err
+        
+                console.log "Fetched #{articleResults.length} Articles"
                 
-            # console.log "Completed Search for: #{req.params[1]} & #{req.params[2]}"    
+                articles = []
+                for a in articleResults
+                    articles.push
+                        Title: a.Title
+                        Body: a.Body
+                        Link: a.Link 
+                
+                
+                
+                res.send
+                    Results: searchResults[0].Hits
+                    Suburb: suburb
+                    Term: term
+                    Articles: articles
             
-            connection.query "INSERT INTO #{db}.#{tblSearch}(Query, Suburb, Hits) VALUES ( \"#{term}\" , \"#{suburb}\", \"#{results}\" )"
-            
-            res.send
-                Results: results
-                Suburb: suburb
-                Term: term
-                Articles: articles
+        else
+            console.log "No matches, Crawling"
+            jsdom.env
+                html: "https://www.google.co.nz/search?q=#{suburb}%20#{term}&as_sitesearch=stuff.co.nz"
+                src: [ jquery ]
+                done: (errors, window) ->
+
+                    $ = window.$
+                    numResults = $('#resultStats').text().split(" ")[1]
+                    articles = []	
+
+                    # Find each article
+                    $(".g").each ->
+				
+                        article =
+                            Title: $(this).find("h3").text().split(" | ")[0].replace(/'|"/g, " ")
+                            Body: $(this).find(".st").text().replace(/'|"/g, " ")
+                            Link: "http://www.google.co.nz" + $(this).find("a").attr("href").replace(/'|"/g, " ")
+
+                        console.log $(this).find("h3").text().split(" | ")[0]
+                        articles.push article
+                        
+                    # console.log "Completed Search for: #{req.params[1]} & #{req.params[2]}"    
+                    
+                    connection.query "INSERT INTO #{db}.#{tblSearch}(Query, Suburb, Hits) VALUES ( \"#{term}\" , \"#{suburb}\", \"#{numResults}\" )"
+                    
+                    for a in articles 
+                        console.log "Inserting:#{a.Body}"
+                        connection.query "INSERT INTO #{db}.#{tblArticle}(Query, Suburb, Title, Body, Link) 
+                        VALUES ( \"#{term}\" , \"#{suburb}\", \"#{a.Title}\", \"#{a.Body}\", \"#{a.Link}\" )"
+                    
+                    res.send
+                        Results: numResults
+                        Suburb: suburb
+                        Term: term
+                        Articles: articles
   
 regions = (req, res, next) ->
 	res.send regionList	
