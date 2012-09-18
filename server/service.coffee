@@ -17,7 +17,7 @@ db = "geonews"
 Read in region data
 ###
 
-regionList = []
+regionList = {}
 regionsCsv = csv().fromPath __dirname + '/data/wellington-city-suburbs.csv', { columns: true }
 regionsCsv.transform (data) ->
 
@@ -37,14 +37,17 @@ regionsCsv.transform (data) ->
 		latLng = gpsCoords[i].split " "
 		
 		coord = 
-			Lat:latLng[1]
-			Lng:latLng[0]
-		
-		coords.push coord
-			
-	region.Coords = coords	
-	
-	regionList.push region
+            Lat:latLng[1]
+            Lng:latLng[0]
+
+        coords.push coord
+
+    region.Coords = coords
+
+    s = data.suburb
+    regionList["#{s}"] = region
+    
+    null
 
 ###
 Set up database connection
@@ -63,11 +66,11 @@ connection.query "INSERT INTO #{db}.#{tblSearch}(Query, Suburb, Hits) VALUES ( \
 Search for a term on google, get resuts for each regions
 ###
 search = (req, res, next) ->
-    suburb = req.params[1]
+    suburb = req.params[1].split("_").join(' ') 
     term = req.params[2]
 
     console.log "Received Request for #{req.params[1]} & #{req.params[2]}"
-        
+      
     # Check the database for a cached search
     connection.query "SELECT * FROM  #{db}.#{tblSearch} 
     WHERE Suburb = '#{suburb}' AND Query = '#{term}'", (err, searchResults) ->
@@ -94,23 +97,28 @@ search = (req, res, next) ->
                         Link: a.Link 
                 
                 
+                for r in regionList
+                    conosle.log("r #{r}")
                 
                 res.send
                     Results: searchResults[0].Hits
                     Suburb: suburb
                     Term: term
                     Articles: articles
-            
+                    Outline: regionList["#{suburb}"]
         else
             console.log "No matches, Crawling"
+            clean = suburb.split(" ").join('_')  
+            
             jsdom.env
-                html: "https://www.google.co.nz/search?q=#{suburb}%20#{term}&as_sitesearch=stuff.co.nz"
+                html: "https://www.google.co.nz/search?q=#{clean}%20#{term}&as_sitesearch=stuff.co.nz"
                 src: [ jquery ]
                 done: (errors, window) ->
 
                     $ = window.$
-                    numResults = $('#resultStats').text().split(" ")[1]
-                    articles = []	
+                    numResults = $('#resultStats').text().split(" ")[1].replace(/([a-zA-Z_,\.~-]+)/, "")
+                    console.log "Found #{numResults}"
+                    articles = []
 
                     # Find each article
                     $(".g").each ->
@@ -137,6 +145,7 @@ search = (req, res, next) ->
                         Suburb: suburb
                         Term: term
                         Articles: articles
+                        Outline: regionList["#{suburb}"]
   
 regions = (req, res, next) ->
 	res.send regionList	

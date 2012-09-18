@@ -1,64 +1,10 @@
 # Set up the Google map 
 relatedArticles = $ "#relatedArticlesList"
 
-suburbs = []
+# Collection of regions on the map
+regions = {};
 
-class Suburb
-
-    constructor:(@name, coordinates, @map) ->
-    
-        @outline = []
-        
-        for c in coordinates
-            latLng = new google.maps.LatLng c.Lat, c.Lng
-            @outline.push latLng
-    
-    drawWeighted:(average) =>
-        console.log "#{@name} has #{@articles.Results} compated to #{average}"
-        
-    draw: (color) =>
-    
-        @overlay = new google.maps.Polygon
-            paths: @outline
-            strokeColor: color
-            strokeOpacity: 0.8
-            strokeWeight: 2
-            fillColor: color
-            fillOpacity: 0.35
-            
-        @overlay.setMap @map
-        
-        google.maps.event.addListener @overlay, 'click', =>
-            console.log @name 
-            relatedArticles.children("li").remove()
-            relatedArticles.append "<li><a href=\"#\">#{@name}</a></li>"
-        
-    remove: () =>
-        @overlay.setMap null
-        
-    getArticles: (term, average) =>
-    
-        nameSafe = @name.split(" ").join('_')
-    
-        $.ajax
-            url: "http://localhost:8080/search/#{nameSafe}/#{term}"
-            dataType: "json",
-            success: (data) ->            
-                @articles = data
-                remove()
-                drawWeighted(average);
-                
-
-            error: (data) -> 
-                console.log "fail"
-         
-        
-    displayArticles: () ->
-        relatedArticles.children("li").remove()
-        
-        for a in @articles
-            relatedArticles.append "<li><a href=\"#\">#{a.Title}</a></li>"
-
+#Setup the map
 SetupMap = () ->
 	
 	# Map set up
@@ -81,7 +27,7 @@ google.maps.event.addDomListener(window, "load", googleMap);
 
 # Fix the height of the map, twitter bootstrap fucks it up, it probbly fucks up some other map things aswell
 mapCanvas = $ "#map_canvas"
-mapCanvas.css {height: "100%" }
+mapCanvas.css {height: "100%"}
 
 $("#search_term").click ->
 
@@ -92,18 +38,38 @@ $("#search_term").click ->
     $.ajax
         url: "http://localhost:8080/search/Wellington/#{term}"
         dataType: "json",
-        success: (data) ->            
-            console.log "Wellington total: #{data.Results}"
+        success: (data) ->
+        
+            cleanTotal = parseInt data.Results.replace(/([a-zA-Z_,\.~-]+)/, "")
+                        
+            relatedArticles.children("li").remove()
+            relatedArticles.append "<li><a href=\"#\">Wellington total: #{cleanTotal}</a></li>"
+
+                        
+            $.each regions, (k,v) ->
+                v.setMap null
             
-            for s in suburbs
-                s.getArticles(term, data.Results)        
+            $.each regions, (k, v) ->
+                console.log "searching for #{v.Suburb}"
                 
+                safeName = "#{k}".split(" ").join('_')
+                
+                $.ajax
+                    url: "http://localhost:8080/search/#{safeName}/#{term}"
+                    dataType: "json",
+                    success: (data) ->         
+                        cleanResults = parseInt data.Results.replace(/([a-zA-Z_,\.~-]+)/, "")
+                        console.log "Success for #{k} 0 #{data.Results}"
+                        v.setMap googleMap
+                        v.setOptions {fillColor:"#FF0000"}
+                        
+                    error: (data) -> 
+                        console.log "fail"
+
         error: (data) -> 
             console.log "fail"
-    
 
-
-
+#Fetch and draw all regions on the map
 $("#populate_regions").click ->
     console.log "Populating regions"
 
@@ -111,104 +77,35 @@ $("#populate_regions").click ->
 	    url: "http://localhost:8080/regions"
 	    dataType: "json",
 	    success: (data) ->
-            for s in data
-                suburb = new Suburb s.Suburb, s.Coords, googleMap
-                suburb.draw "#ff0000"
-                suburbs.push suburb
-
+	    
+            $.each data, (k, v) ->
+                console.log "k:#{k} - v:#{v.Suburb}"
+                
+                outline = []
+                
+                for c in v.Coords
+                    latLng = new google.maps.LatLng c.Lat, c.Lng
+                    outline.push latLng
+                
+                overlay = new google.maps.Polygon
+                    paths: outline
+                    strokeColor: "#222222"
+                    strokeOpacity: 0.8
+                    strokeWeight: 2
+                    fillColor: "#999999"
+                    fillOpacity: 0.35
+            
+                overlay.setMap googleMap    
+                
+                regions["#{v.Suburb}"] = overlay 
+                
 	    error: (data) -> 
-            console.log "fail"
+            console.log "fail to fetch regions"
+
+#Clear all regions from the map
+$("#clear_regions").click ->
+    console.log "Clearing Regions"
     
+    $.each regions, (k,v) ->
+        v.setMap null
 
-# mapCanvasHeight = mapCanvas.css "height"
-# mapCanvas.css {height: "#{mapCanvasHeight - 50}px"}
-
-# Zoom listner
-# google.maps.event.addListener googleMap, "zoom_changed", ->
-# console.log "Zoom #{googleMap.getZoom()} "
-###
-
-size = 0.05
-current = 0;
-range = 16;
-	
-createOverlay = (incident) ->
-
-	geo = incident.geolocation
-	
-	lat = new google.maps.LatLng geo.lat - size, geo.long - size * 2
-	lng = new google.maps.LatLng geo.lat + size, geo.long + size * 2
-
-	imageBounds = new google.maps.LatLngBounds lat, lng
-	overlay = new google.maps.GroundOverlay "#{incident.thumbnail_url}", imageBounds
-
-	google.maps.event.addListener overlay, 'click', () => 
-		Window.CreateIncidentModal incident.id
-
-	overlay.setMap googleMap
-
-onSuccess = (data) ->
-	for incident in data.incidents
-		current++
-		createOverlay incident
-		
-onFail = (data) ->
-	console.log "Rest Call failed"
-		
-Window.RWCall onSuccess, onFail, {}, "unapproved_stub", "/start=#{current}/number=#{range}", "GET"
-
-
-# Controls
-nextButton = $ "#nextBtn"
-prevButton = $ "#prevBtn"
-d16Button = $ "#d16"
-d32Button = $ "#d32"
-d64Button = $ "#d64"
-d128Button = $ "#d128"
-d256Button = $ "#d256"
-
-nextButton.click ->
-	console.log "Clicked Next"
-	Window.RWCall onSuccess, onFail, {}, "unapproved_stub", "/start=#{current}/number=#{range}", "GET"
-
-prevButton.click ->
-	console.log "Clicked Prev"
-	current = if current - range > 0 then current - range else 0;
-	Window.RWCall onSuccess, onFail, {}, "unapproved_stub", "/start=#{current}/number=#{range}", "GET"
-	
-changeRange = (newRange) ->
-	current = if current - range > 0 then current - range else 0;
-	range = newRange;
-	Window.RWCall onSuccess, onFail, {}, "unapproved_stub", "/start=#{current}/number=#{range}", "GET"
-
-d16Button.click -> changeRange 16
-d32Button.click -> changeRange 32
-d64Button.click -> changeRange 64
-d128Button.click -> changeRange 128
-d256Button.click -> changeRange 256
-
-
-
-for incident in incidentList.Incidents
-
-	newarkLat = new google.maps.LatLng incident.Lat - size, incident.Lng - size * 2
-	newarkLng = new google.maps.LatLng incident.Lat + size, incident.Lng + size * 2
-	
-	borderCoordinates = [
-		new google.maps.LatLng incident.Lat - size, incident.Lng - size * 2
-		new google.maps.LatLng incident.Lat - size, incident.Lng + size * 2
-		new google.maps.LatLng incident.Lat + size, incident.Lng + size * 2
-		new google.maps.LatLng incident.Lat + size, incident.Lng - size * 2
-		new google.maps.LatLng incident.Lat - size, incident.Lng - size * 2
-	]
-	
-	border = new google.maps.Polyline {
-			path: borderCoordinates,
-			strokeColor: "000000",
-			strokeOpacity: 1,
-			strokeWeight: 1
-	}
-
-		
-	border.setMap googleMap
-###	
