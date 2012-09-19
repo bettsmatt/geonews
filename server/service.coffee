@@ -32,7 +32,7 @@ regionsCsv.transform (data) ->
 	
 	coords = []
 	
-	for i in [0..gpsCoords.length - 1]
+	for i in [0..gpsCoords.length - 1 ]
 		
 		latLng = gpsCoords[i].split " "
 		
@@ -66,6 +66,7 @@ connection.query "INSERT INTO #{db}.#{tblSearch}(Query, Suburb, Hits) VALUES ( \
 Search for a term on google, get resuts for each regions
 ###
 search = (req, res, next) ->
+    suburbUnderscore = req.params[1]
     suburb = req.params[1].split("_").join(' ') 
     term = req.params[2]
 
@@ -108,15 +109,18 @@ search = (req, res, next) ->
                     Outline: regionList["#{suburb}"]
         else
             console.log "No matches, Crawling"
-            clean = suburb.split(" ").join('_')  
             
             jsdom.env
-                html: "https://www.google.co.nz/search?q=#{clean}%20#{term}&as_sitesearch=stuff.co.nz"
+                html: "https://www.google.co.nz/search?q=#{suburbUnderscore}%20#{term}&as_sitesearch=stuff.co.nz"
                 src: [ jquery ]
                 done: (errors, window) ->
 
                     $ = window.$
-                    numResults = $('#resultStats').text().split(" ")[1].replace(/([a-zA-Z_,\.~-]+)/, "")
+                    resultsText = $('#resultStats').text().split(" ") #[1].replace(/([a-zA-Z_,\.~-]+)/, "")
+                    if resultsText.length == 0
+                        res.send
+                            Error: "Google has banned your id for submitting too many searched :( "
+                    numResults = resultsText[1].replace(/([a-zA-Z_,\.~-]+)/, "")
                     console.log "Found #{numResults}"
                     articles = []
 
@@ -128,7 +132,7 @@ search = (req, res, next) ->
                             Body: $(this).find(".st").text().replace(/'|"/g, " ")
                             Link: "http://www.google.co.nz" + $(this).find("a").attr("href").replace(/'|"/g, " ")
 
-                        console.log $(this).find("h3").text().split(" | ")[0]
+                        #console.log $(this).find("h3").text().split(" | ")[0]
                         articles.push article
                         
                     # console.log "Completed Search for: #{req.params[1]} & #{req.params[2]}"    
@@ -136,7 +140,7 @@ search = (req, res, next) ->
                     connection.query "INSERT INTO #{db}.#{tblSearch}(Query, Suburb, Hits) VALUES ( \"#{term}\" , \"#{suburb}\", \"#{numResults}\" )"
                     
                     for a in articles 
-                        console.log "Inserting:#{a.Body}"
+                        #console.log "Inserting:#{a.Body}"
                         connection.query "INSERT INTO #{db}.#{tblArticle}(Query, Suburb, Title, Body, Link) 
                         VALUES ( \"#{term}\" , \"#{suburb}\", \"#{a.Title}\", \"#{a.Body}\", \"#{a.Link}\" )"
                     
