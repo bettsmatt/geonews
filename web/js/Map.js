@@ -1,13 +1,40 @@
 (function() {
-  var SetupMap, googleMap, mapCanvas, regions, relatedArticles, resultsSuburb, resultsWellington;
+  var SetupMap, googleMap, mapCanvas, mapTip, menuWell, mousePos, regions, relatedArticles, relatedArticlesHeader, resultsSuburb, resultsWellington;
 
   relatedArticles = $("#relatedArticlesList");
+
+  menuWell = $("#menuWell");
+
+  relatedArticlesHeader = $("#relatedArticlesHeader");
 
   regions = {};
 
   resultsWellington = $("#Results_Wellington");
 
   resultsSuburb = $("#Results_Suburb");
+
+  mapTip = $("<div class=\"myToolTip\" rel=\"tooltip\" title=\"Test tool top\" style = \"\">Hello</div>");
+
+  $("body").append(mapTip);
+
+  mapTip.hide();
+
+  mousePos = {
+    x: -1,
+    y: -1
+  };
+
+  $(document).mousemove(function(e) {
+    mousePos = {
+      x: e.pageX,
+      y: e.pageY
+    };
+    mapTip.css({
+      top: "" + (e.pageY + 20) + "px",
+      left: "" + e.pageX + "px"
+    });
+    return console.log("" + mousePos.x + ", " + mousePos.y);
+  });
 
   SetupMap = function() {
     var elem, mapCenter, mapOptions, style;
@@ -138,18 +165,40 @@
                 }
               }
               google.maps.event.addListener(v, "mouseover", function() {
-                return resultsSuburb.text("" + k + " | " + cleanResults);
+                resultsSuburb.text("" + k + " | " + cleanResults);
+                mapTip.show();
+                mapTip.text("" + k + " - " + data.Results + " Articles");
+                return v.setOptions({
+                  strokeWeight: 4
+                });
+              });
+              google.maps.event.addListener(v, "mouseout", function() {
+                v.setOptions({
+                  strokeWeight: 1
+                });
+                return mapTip.hide();
               });
               return google.maps.event.addListener(v, "click", function() {
-                var a, _i, _len, _ref, _results;
-                relatedArticles.children("li").remove();
-                _ref = data.Articles;
-                _results = [];
-                for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-                  a = _ref[_i];
-                  _results.push(relatedArticles.append("<li><a href=\"#\">" + a.Title + "</a></li>"));
-                }
-                return _results;
+                return relatedArticles.slideUp("slow", function() {
+                  var a, articleElem, num, _i, _len, _ref;
+                  relatedArticles.children("li").remove();
+                  relatedArticles.children("a").remove();
+                  relatedArticles.append("                                    <li class=\"nav-header\" id=\"relatedArticlesHeader\">                                        Showing " + data.Articles.length + " of " + data.Results + " for " + k + "                                    </li>");
+                  num = 1;
+                  _ref = data.Articles;
+                  for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+                    a = _ref[_i];
+                    articleElem = $("<li><a rel=\"tooltip\" title=\"" + a.Body + "\" href=\"" + a.Link + "\">" + (num++) + " - " + a.Title + "</a></li>");
+                    relatedArticles.append(articleElem);
+                    relatedArticles.append("<li class=\"divider\"></li>");
+                    articleElem.hover(function() {
+                      console.log("Hovered on " + a.Title);
+                      return articleElem.tooltip({});
+                    });
+                  }
+                  relatedArticles.append("                                    <a href=\"\" class=\"noHover\">                                        <i class=\"icon-chevron-left disabled icon-black\"></i>                                        <del>Previous</del>                                                                            <a class=\"center\" href=\"\">                                        Close                                        <i class=\"icon-chevron-up icon-black\"></i>                                    </a>                                                                        <a class=\"pull-right\" href=\"\">                                        Next                                        <i class=\"icon-chevron-right icon-black\"></i>                                    </a>");
+                  return relatedArticles.slideDown("slow");
+                });
               });
             },
             error: function(data) {
@@ -164,45 +213,45 @@
     });
   });
 
-  $("#populate_regions").click(function() {
-    console.log("Populating regions");
-    return $.ajax({
-      url: "http://localhost:8080/regions",
-      dataType: "json",
-      success: function(data) {
-        return $.each(data, function(k, v) {
-          var c, latLng, outline, overlay, _i, _len, _ref;
-          console.log("k:" + k + " - v:" + v.Suburb);
-          outline = [];
-          _ref = v.Coords;
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            c = _ref[_i];
-            latLng = new google.maps.LatLng(c.Lat, c.Lng);
-            outline.push(latLng);
-          }
-          overlay = new google.maps.Polygon({
-            paths: outline,
-            strokeColor: "#FFFFFF",
-            strokeOpacity: 1,
-            strokeWeight: 1,
-            fillColor: "#222222",
-            fillOpacity: 1
-          });
-          overlay.setMap(googleMap);
-          return regions["" + v.Suburb] = overlay;
+  console.log("Populating regions");
+
+  $.ajax({
+    url: "http://localhost:8080/regions",
+    dataType: "json",
+    success: function(data) {
+      return $.each(data, function(k, v) {
+        var c, latLng, outline, overlay, _i, _len, _ref;
+        console.log("k:" + k + " - v:" + v.Suburb);
+        outline = [];
+        _ref = v.Coords;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          c = _ref[_i];
+          latLng = new google.maps.LatLng(c.Lat, c.Lng);
+          outline.push(latLng);
+        }
+        overlay = new google.maps.Polygon({
+          paths: outline,
+          strokeColor: "#FFFFFF",
+          strokeOpacity: 1,
+          strokeWeight: 1,
+          fillColor: "#222222",
+          fillOpacity: 1
         });
-      },
-      error: function(data) {
-        return console.log("fail to fetch regions");
-      }
-    });
+        overlay.setMap(googleMap);
+        return regions["" + v.Suburb] = overlay;
+      });
+    },
+    error: function(data) {
+      return console.log("fail to fetch regions");
+    }
   });
 
-  $("#clear_regions").click(function() {
-    console.log("Clearing Regions");
-    return $.each(regions, function(k, v) {
-      return v.setMap(null);
-    });
-  });
+  /*
+  $("#clear_regions").click ->
+      console.log "Clearing Regions"
+      
+      $.each regions, (k,v) ->
+          v.setMap null
+  */
 
 }).call(this);

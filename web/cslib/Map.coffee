@@ -1,5 +1,7 @@
 # Set up the Google map 
 relatedArticles = $ "#relatedArticlesList"
+menuWell = $ "#menuWell"
+relatedArticlesHeader = $ "#relatedArticlesHeader"
 
 # Collection of regions on the map
 regions = {};
@@ -8,12 +10,25 @@ regions = {};
 resultsWellington = $ "#Results_Wellington"
 resultsSuburb = $ "#Results_Suburb"
 
+
+# Record mouse movement, nessary to draw tool tips when clicking on overlays on the map
+
+mapTip = $ "<div class=\"myToolTip\" rel=\"tooltip\" title=\"Test tool top\" style = \"\">Hello</div>"
+$("body").append mapTip
+mapTip.hide()
+mousePos = { x: -1, y: -1 }
+$(document).mousemove (e) ->
+    mousePos = {x: e.pageX, y: e.pageY }
+    mapTip.css {top: "#{e.pageY + 20}px"; left: "#{e.pageX}px";}
+    console.log "#{mousePos.x}, #{mousePos.y}"
+
 #Setup the map
 SetupMap = () ->
 	
 	# Map set up
 	mapCenter = new google.maps.LatLng -41.288889, 174.777222
 	
+	# Custom map styles
 	style = `
     [
 	    {
@@ -44,7 +59,8 @@ SetupMap = () ->
 		    ]		
 	    }
     ]`
-
+    
+    # Position and Zoom
 	mapOptions = {
 		styles: style,
 		zoom: 12,
@@ -102,11 +118,11 @@ $("#search_term").click ->
                         
 
                         
-                        #Solid Color if More results then Wellington probbly an error
+                        # Solid Color if More results then Wellington probbly an error
                         if cleanResults > cleanTotal
                             v.setOptions {fillColor:"#FF0000"}
                             
-                        #Weight bases on amount found
+                        # Weight bases on amount found
                         else
                             percent = cleanResults / cleanTotal
                             color = 255 * percent;
@@ -133,14 +149,61 @@ $("#search_term").click ->
                              else
                                 v.setOptions {fillColor:"#FF0000"}      
 
+                        # Highlight when moused over
                         google.maps.event.addListener v, "mouseover", ->
                             resultsSuburb.text "#{k} | #{cleanResults}"
+                            mapTip.show()
+                            mapTip.text "#{k} - #{data.Results} Articles"
+                            v.setOptions {strokeWeight:4}  
                             
+                        google.maps.event.addListener v, "mouseout", ->
+                            v.setOptions {strokeWeight:1} 
+                            mapTip.hide()
+                            
+                        # Display Articles when a region is clicked on
                         google.maps.event.addListener v, "click", ->
-                            relatedArticles.children("li").remove()
-                            for a in data.Articles
-                                relatedArticles.append "<li><a href=\"#\">#{a.Title}</a></li>"
                         
+                            relatedArticles.slideUp "slow", ->
+                                relatedArticles.children("li").remove()
+                                relatedArticles.children("a").remove()
+                                
+                                relatedArticles.append "
+                                    <li class=\"nav-header\" id=\"relatedArticlesHeader\">
+                                        Showing #{data.Articles.length} of #{data.Results} for #{k}
+                                    </li>"
+                                
+                                num = 1;
+                                for a in data.Articles
+                                    articleElem = $ "<li><a rel=\"tooltip\" title=\"#{a.Body}\" href=\"#{a.Link}\">#{num++} - #{a.Title}</a></li>" 
+                                    relatedArticles.append articleElem
+                                    relatedArticles.append "<li class=\"divider\"></li>"
+                                    articleElem.hover ->
+                                        console.log("Hovered on #{a.Title}")
+                                        articleElem.tooltip {}
+
+                                    
+                                    
+                                relatedArticles.append "
+                                    <a href=\"\" class=\"noHover\">
+                                        <i class=\"icon-chevron-left disabled icon-black\"></i>
+                                        <del>Previous</del>
+                                        
+                                    <a class=\"center\" href=\"\">
+                                        Close
+                                        <i class=\"icon-chevron-up icon-black\"></i>
+                                    </a>
+                                    
+                                    <a class=\"pull-right\" href=\"\">
+                                        Next
+                                        <i class=\"icon-chevron-right icon-black\"></i>
+                                    </a>"
+                                
+                                
+                                relatedArticles.slideDown "slow"
+                                
+                                
+                                
+                                
                     error: (data) -> 
                         console.log "fail"
 
@@ -148,42 +211,42 @@ $("#search_term").click ->
             console.log "fail"
 
 #Fetch and draw all regions on the map
-$("#populate_regions").click ->
-    console.log "Populating regions"
+console.log "Populating regions"
 
-    $.ajax
-	    url: "http://localhost:8080/regions"
-	    dataType: "json",
-	    success: (data) ->
-	    
-            $.each data, (k, v) ->
-                console.log "k:#{k} - v:#{v.Suburb}"
-                
-                outline = []
-                
-                for c in v.Coords
-                    latLng = new google.maps.LatLng c.Lat, c.Lng
-                    outline.push latLng
-                
-                overlay = new google.maps.Polygon
-                    paths: outline
-                    strokeColor: "#FFFFFF"
-                    strokeOpacity: 1
-                    strokeWeight: 1
-                    fillColor: "#222222"
-                    fillOpacity: 1
+$.ajax
+    url: "http://localhost:8080/regions"
+    dataType: "json",
+    success: (data) ->
+    
+        $.each data, (k, v) ->
+            console.log "k:#{k} - v:#{v.Suburb}"
             
-                overlay.setMap googleMap
-                
-                regions["#{v.Suburb}"] = overlay 
-                
-	    error: (data) -> 
-            console.log "fail to fetch regions"
+            outline = []
+            
+            for c in v.Coords
+                latLng = new google.maps.LatLng c.Lat, c.Lng
+                outline.push latLng
+            
+            overlay = new google.maps.Polygon
+                paths: outline
+                strokeColor: "#FFFFFF"
+                strokeOpacity: 1
+                strokeWeight: 1
+                fillColor: "#222222"
+                fillOpacity: 1
+        
+            overlay.setMap googleMap
+            
+            regions["#{v.Suburb}"] = overlay 
+            
+    error: (data) -> 
+        console.log "fail to fetch regions"
 
 #Clear all regions from the map
+###
 $("#clear_regions").click ->
     console.log "Clearing Regions"
     
     $.each regions, (k,v) ->
         v.setMap null
-
+###
