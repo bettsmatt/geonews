@@ -1,5 +1,5 @@
 (function() {
-  var SetupMap, googleMap, mapCanvas, mapTip, menuWell, mousePos, regions, relatedArticles, relatedArticlesHeader, resultsSuburb, resultsWellington;
+  var SetupMap, googleMap, help, helpButton, mapCanvas, mapTip, menuWell, mousePos, regions, relatedArticles, relatedArticlesHeader, resultsSuburb, resultsWellington, scale;
 
   relatedArticles = $("#relatedArticlesList");
 
@@ -13,7 +13,17 @@
 
   resultsSuburb = $("#Results_Suburb");
 
-  mapTip = $("<div class=\"myToolTip\" rel=\"tooltip\" title=\"Test tool top\" style = \"\">Hello</div>");
+  scale = $("#over_map_scale");
+
+  help = $("#over_map_help");
+
+  helpButton = $("#helpButton");
+
+  helpButton.popover({
+    placement: "right"
+  });
+
+  mapTip = $("<div class=\"myToolTip\" rel=\"tooltip\" title=\"Map tool tip\" style = \"\"></div>");
 
   $("body").append(mapTip);
 
@@ -25,6 +35,7 @@
   };
 
   $(document).mousemove(function(e) {
+    var cssVal, popover;
     mousePos = {
       x: e.pageX,
       y: e.pageY
@@ -33,7 +44,16 @@
       top: "" + (e.pageY + 20) + "px",
       left: "" + e.pageX + "px"
     });
-    return console.log("" + mousePos.x + ", " + mousePos.y);
+    popover = $(".popover");
+    if (popover.length > 0) {
+      cssVal = popover.css("top");
+      if (cssVal[0] === '-') {
+        console.log("Adjusting top to 7px");
+        return popover.css({
+          top: "7px"
+        });
+      }
+    }
   });
 
   SetupMap = function() {
@@ -165,7 +185,6 @@
                 }
               }
               google.maps.event.addListener(v, "mouseover", function() {
-                resultsSuburb.text("" + k + " | " + cleanResults);
                 mapTip.show();
                 mapTip.text("" + k + " - " + data.Results + " Articles");
                 return v.setOptions({
@@ -180,23 +199,28 @@
               });
               return google.maps.event.addListener(v, "click", function() {
                 return relatedArticles.slideUp("slow", function() {
-                  var a, articleElem, num, _i, _len, _ref;
+                  var a, articleElem, articleElemWrapper, num, testpopover, _i, _len, _ref;
                   relatedArticles.children("li").remove();
                   relatedArticles.children("a").remove();
-                  relatedArticles.append("                                    <li class=\"nav-header\" id=\"relatedArticlesHeader\">                                        Showing " + data.Articles.length + " of " + data.Results + " for " + k + "                                    </li>");
+                  relatedArticles.append("                                    <li class=\"nav-header\" id=\"relatedArticlesHeader\">                                        Showing " + data.Articles.length + " of " + data.Results + " for <b>" + k + "</b>                                    </li>");
                   num = 1;
                   _ref = data.Articles;
                   for (_i = 0, _len = _ref.length; _i < _len; _i++) {
                     a = _ref[_i];
-                    articleElem = $("<li><a rel=\"tooltip\" title=\"" + a.Body + "\" href=\"" + a.Link + "\">" + (num++) + " - " + a.Title + "</a></li>");
-                    relatedArticles.append(articleElem);
-                    relatedArticles.append("<li class=\"divider\"></li>");
-                    articleElem.hover(function() {
-                      console.log("Hovered on " + a.Title);
-                      return articleElem.tooltip({});
+                    articleElem = $("<a rel=\"popover\" data-content=\"" + a.Body + "\" data-original-title=\"" + a.Title + "\" href=\"" + a.Link + "\">                                    " + (num++) + ") " + a.Title + "...</a>");
+                    articleElem.popover({
+                      placement: "right"
                     });
+                    articleElemWrapper = $("<li> </li>");
+                    articleElemWrapper.append(articleElem);
+                    relatedArticles.append(articleElemWrapper);
+                    relatedArticles.append("<li class=\"divider\" style=\"margin-top:1px;margin-bottom:1px;\"></li>");
                   }
-                  relatedArticles.append("                                    <a href=\"\" class=\"noHover\">                                        <i class=\"icon-chevron-left disabled icon-black\"></i>                                        <del>Previous</del>                                                                            <a class=\"center\" href=\"\">                                        Close                                        <i class=\"icon-chevron-up icon-black\"></i>                                    </a>                                                                        <a class=\"pull-right\" href=\"\">                                        Next                                        <i class=\"icon-chevron-right icon-black\"></i>                                    </a>");
+                  relatedArticles.append("                                    <a id=\"CloseButton\" href=\"\">                                        <i class=\"icon-chevron-up icon-black\"></i>                                        Close                                    </a>                                    <a class=\"pull-right\" href=\"\">                                        Next                                        <i class=\"icon-chevron-right icon-black\"></i>                                    </a>                                    <a href=\"\" class=\"noHover pull-right\">                                        <i class=\"icon-chevron-left disabled icon-black\"></i>                                        <del>Previous</del>                                    </a>                                ");
+                  relatedArticles.find("#CloseButton").click(function() {
+                    return relatedArticles.slideUp("slow");
+                  });
+                  testpopover = $("<a id=\"helpButton\" href=\"#\" rel=\"popover\"	                                                data-content=\"                            	                        To <b>Find Artciles</b> I need you to do two things, firstly search for a keyword, then select a suburb by clicking on it.<br/>                            	                        <br/>                            	                        After clikcing on a suburb, i'll display it's articles in a menu on the left. <br/>                            	                        To get a <b>blurb</b>, hover over an article.<br/>                            	                        To find the <b>source</b>, click on an article.<br/>                            	                        <br/>                            	                        When you search for a keywork i'll shade the suburbs in relation to how many articles they are associated with. <br/>                            	                        <br/>                            	                        <b> Bright Red </b> for more, <b> Dark Red </b> for less. <br/>                            	                        <br/>                            	                        <img src='../img/scale.png'></img><br/>                            	                        <br/>                            	                        Now get started by typing a key work into the search box to your left and clicking on search.                            	                        \"                            	                    data-original-title=\"Help\">                            	                    Help?                                  </a>");
                   return relatedArticles.slideDown("slow");
                 });
               });
@@ -220,7 +244,7 @@
     dataType: "json",
     success: function(data) {
       return $.each(data, function(k, v) {
-        var c, latLng, outline, overlay, _i, _len, _ref;
+        var c, latLng, outline, overlay, suburb, _i, _len, _ref;
         console.log("k:" + k + " - v:" + v.Suburb);
         outline = [];
         _ref = v.Coords;
@@ -238,7 +262,21 @@
           fillOpacity: 1
         });
         overlay.setMap(googleMap);
-        return regions["" + v.Suburb] = overlay;
+        regions["" + v.Suburb] = overlay;
+        suburb = data.Sub;
+        google.maps.event.addListener(overlay, "mouseover", function() {
+          mapTip.show();
+          mapTip.text("" + v.Suburb);
+          return overlay.setOptions({
+            strokeWeight: 4
+          });
+        });
+        return google.maps.event.addListener(overlay, "mouseout", function() {
+          overlay.setOptions({
+            strokeWeight: 1
+          });
+          return mapTip.hide();
+        });
       });
     },
     error: function(data) {

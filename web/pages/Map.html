@@ -33,14 +33,41 @@
 		<div id="over_map"> 
 		    <div class="well" id = "menuWell" style="padding: 8px 0;">
 				<ul class="nav nav-list">
-					<li class="nav-header">Search</li>
+					<li class="nav-header">Navigation</li>
+
+                    <li>
+					    <a id="helpButton" href="#" rel="popover"
+    	                    data-content="
+    	                        To <b>Find Artciles</b> I need you to do two things, firstly search for a keyword, then select a suburb by clicking on it.<br/>
+    	                        <br/>
+    	                        After clikcing on a suburb, i'll display it's articles in a menu on the left. <br/>
+    	                        To get a <b>blurb</b>, hover over an article.<br/>
+    	                        To find the <b>source</b>, click on an article.<br/>
+    	                        <br/>
+    	                        When you search for a keywork i'll shade the suburbs in relation to how many articles they are associated with. <br/>
+    	                        <br/>
+    	                        <b> Bright Red </b> for more, <b> Dark Red </b> for less. <br/>
+    	                        <br/>
+    	                        <img src='../img/scale.png'></img><br/>
+    	                        <br/>
+    	                        Now get started by typing a key work into the search box to your left and clicking on search.
+    	                        "
+
+    	                    data-original-title="Help">
+    	                   <!-- <i class="icon-question-sign"></i> -->
+    	                    Help?  
+	                    </a>
+                    </li>
 					<div class="input-append">
-                        <input type="text" class="span2" id="search_text_box"  placeholder="Search">
+                        <input type="text" style="width:163px" id="search_text_box"  placeholder="Type A Keyword Here">
                             <span class="add-on">
                                 <i class="icon-search icon-black"></i>
                                 <a id = "search_term" href="#">Search</a>
                             </span>
                     </div>
+                    
+					<li class="divider"></li>
+					
                 </ul>
 
                 <ul class="nav nav-list" id = "relatedArticlesList">
@@ -48,6 +75,7 @@
 				</ul>
             </div>
 		</div>
+		    
 		<div id="map_canvas"></div>
 
 	<!-- /container -->

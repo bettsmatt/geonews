@@ -18,8 +18,8 @@
 
 #over_map { 
     position: absolute; 
-    top: 5px; 
-    left: 5px; 
+    top: 15px; 
+    left: 15px; 
     z-index: 99;
 }
 
@@ -27,11 +27,18 @@
     width:280px;
 }
 
+.myDivider{
+    margin-top:1px;
+    margin-bottom:1px;
+}
 
+.popover{
+    /*padding-top:341px;*/
+}
 .myToolTip{
     display: block;
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    font-size: 11px;
+    font-size: 18px;
     position: absolute;
     top: 0px;
     left: 0px;
@@ -43,7 +50,10 @@
 
 }
 
+a.noHover{
 
+padding-right:20px;
+}
 /* Turn Hovers off on links */
 a.noHover:hover   {
   /* Applies to links under the pointer */

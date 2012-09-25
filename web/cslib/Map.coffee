@@ -10,18 +10,32 @@ regions = {};
 resultsWellington = $ "#Results_Wellington"
 resultsSuburb = $ "#Results_Suburb"
 
+scale = $ "#over_map_scale"
+help = $ "#over_map_help"
+
+helpButton = $ "#helpButton"
+helpButton.popover({placement:"right"})
 
 # Record mouse movement, nessary to draw tool tips when clicking on overlays on the map
 
-mapTip = $ "<div class=\"myToolTip\" rel=\"tooltip\" title=\"Test tool top\" style = \"\">Hello</div>"
+mapTip = $ "<div class=\"myToolTip\" rel=\"tooltip\" title=\"Map tool tip\" style = \"\"></div>"
 $("body").append mapTip
 mapTip.hide()
 mousePos = { x: -1, y: -1 }
 $(document).mousemove (e) ->
     mousePos = {x: e.pageX, y: e.pageY }
     mapTip.css {top: "#{e.pageY + 20}px"; left: "#{e.pageX}px";}
-    console.log "#{mousePos.x}, #{mousePos.y}"
-
+    #console.log "#{mousePos.x}, #{mousePos.y}"
+    
+    #Really hacky, need to do this better
+    #The help popup is positioned off the screen so we need to put it back on the screen
+    popover = $ ".popover"
+    if popover.length > 0
+        cssVal = popover.css("top")
+        if cssVal[0] == '-'
+            console.log("Adjusting top to 7px")
+            popover.css {top:"7px"}
+    
 #Setup the map
 SetupMap = () ->
 	
@@ -151,7 +165,6 @@ $("#search_term").click ->
 
                         # Highlight when moused over
                         google.maps.event.addListener v, "mouseover", ->
-                            resultsSuburb.text "#{k} | #{cleanResults}"
                             mapTip.show()
                             mapTip.text "#{k} - #{data.Results} Articles"
                             v.setOptions {strokeWeight:4}  
@@ -169,36 +182,65 @@ $("#search_term").click ->
                                 
                                 relatedArticles.append "
                                     <li class=\"nav-header\" id=\"relatedArticlesHeader\">
-                                        Showing #{data.Articles.length} of #{data.Results} for #{k}
+                                        Showing #{data.Articles.length} of #{data.Results} for <b>#{k}</b>
                                     </li>"
                                 
                                 num = 1;
                                 for a in data.Articles
-                                    articleElem = $ "<li><a rel=\"tooltip\" title=\"#{a.Body}\" href=\"#{a.Link}\">#{num++} - #{a.Title}</a></li>" 
-                                    relatedArticles.append articleElem
-                                    relatedArticles.append "<li class=\"divider\"></li>"
-                                    articleElem.hover ->
-                                        console.log("Hovered on #{a.Title}")
-                                        articleElem.tooltip {}
-
+                                    
+                                    articleElem = $ "<a rel=\"popover\" data-content=\"#{a.Body}\" data-original-title=\"#{a.Title}\" href=\"#{a.Link}\">
+                                    #{num++}) #{a.Title}...</a>" 
+                                    articleElem.popover({placement:"right"})
+                                    articleElemWrapper = $ "<li> </li>"
+                                    articleElemWrapper.append articleElem
+                                    
+  
+                                    
+                                    relatedArticles.append articleElemWrapper
+                                    relatedArticles.append "<li class=\"divider\" style=\"margin-top:1px;margin-bottom:1px;\"></li>"
                                     
                                     
+                                # menu controls
                                 relatedArticles.append "
-                                    <a href=\"\" class=\"noHover\">
-                                        <i class=\"icon-chevron-left disabled icon-black\"></i>
-                                        <del>Previous</del>
-                                        
-                                    <a class=\"center\" href=\"\">
-                                        Close
+                                    <a id=\"CloseButton\" href=\"\">
                                         <i class=\"icon-chevron-up icon-black\"></i>
+                                        Close
                                     </a>
-                                    
                                     <a class=\"pull-right\" href=\"\">
                                         Next
                                         <i class=\"icon-chevron-right icon-black\"></i>
-                                    </a>"
+                                    </a>
+                                    <a href=\"\" class=\"noHover pull-right\">
+                                        <i class=\"icon-chevron-left disabled icon-black\"></i>
+                                        <del>Previous</del>
+                                    </a>
+                                "
+                                
+                                relatedArticles.find("#CloseButton").click ->
+                                    relatedArticles.slideUp "slow"
                                 
                                 
+                                testpopover = $ "<a id=\"helpButton\" href=\"#\" rel=\"popover\"
+	                                                data-content=\"
+                            	                        To <b>Find Artciles</b> I need you to do two things, firstly search for a keyword, then select a suburb by clicking on it.<br/>
+                            	                        <br/>
+                            	                        After clikcing on a suburb, i'll display it's articles in a menu on the left. <br/>
+                            	                        To get a <b>blurb</b>, hover over an article.<br/>
+                            	                        To find the <b>source</b>, click on an article.<br/>
+                            	                        <br/>
+                            	                        When you search for a keywork i'll shade the suburbs in relation to how many articles they are associated with. <br/>
+                            	                        <br/>
+                            	                        <b> Bright Red </b> for more, <b> Dark Red </b> for less. <br/>
+                            	                        <br/>
+                            	                        <img src='../img/scale.png'></img><br/>
+                            	                        <br/>
+                            	                        Now get started by typing a key work into the search box to your left and clicking on search.
+                            	                        \"
+
+                            	                    data-original-title=\"Help\">
+                            	                    Help?  
+                                </a>"
+
                                 relatedArticles.slideDown "slow"
                                 
                                 
@@ -238,6 +280,20 @@ $.ajax
             overlay.setMap googleMap
             
             regions["#{v.Suburb}"] = overlay 
+            
+            suburb = data.Sub
+            
+            # Highlight when moused over
+            google.maps.event.addListener overlay, "mouseover", ->
+                mapTip.show()
+                mapTip.text "#{v.Suburb}"
+                overlay.setOptions {strokeWeight:4}  
+                
+            google.maps.event.addListener overlay, "mouseout", ->
+                overlay.setOptions {strokeWeight:1} 
+                mapTip.hide()
+                            
+            
             
     error: (data) -> 
         console.log "fail to fetch regions"
