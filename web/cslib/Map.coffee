@@ -40,7 +40,7 @@ $(document).mousemove (e) ->
 SetupMap = () ->
 	
 	# Map set up
-	mapCenter = new google.maps.LatLng -41.288889, 174.777222
+	mapCenter = new google.maps.LatLng -41.278889, 174.737222
 	
 	# Custom map styles
 	style = `
@@ -218,28 +218,8 @@ $("#search_term").click ->
                                 
                                 relatedArticles.find("#CloseButton").click ->
                                     relatedArticles.slideUp "slow"
+                                    false
                                 
-                                
-                                testpopover = $ "<a id=\"helpButton\" href=\"#\" rel=\"popover\"
-	                                                data-content=\"
-                            	                        To <b>Find Artciles</b> I need you to do two things, firstly search for a keyword, then select a suburb by clicking on it.<br/>
-                            	                        <br/>
-                            	                        After clikcing on a suburb, i'll display it's articles in a menu on the left. <br/>
-                            	                        To get a <b>blurb</b>, hover over an article.<br/>
-                            	                        To find the <b>source</b>, click on an article.<br/>
-                            	                        <br/>
-                            	                        When you search for a keywork i'll shade the suburbs in relation to how many articles they are associated with. <br/>
-                            	                        <br/>
-                            	                        <b> Bright Red </b> for more, <b> Dark Red </b> for less. <br/>
-                            	                        <br/>
-                            	                        <img src='../img/scale.png'></img><br/>
-                            	                        <br/>
-                            	                        Now get started by typing a key work into the search box to your left and clicking on search.
-                            	                        \"
-
-                            	                    data-original-title=\"Help\">
-                            	                    Help?  
-                                </a>"
 
                                 relatedArticles.slideDown "slow"
                                 
@@ -298,11 +278,3 @@ $.ajax
     error: (data) -> 
         console.log "fail to fetch regions"
 
-#Clear all regions from the map
-###
-$("#clear_regions").click ->
-    console.log "Clearing Regions"
-    
-    $.each regions, (k,v) ->
-        v.setMap null
-###

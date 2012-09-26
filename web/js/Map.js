@@ -58,7 +58,7 @@
 
   SetupMap = function() {
     var elem, mapCenter, mapOptions, style;
-    mapCenter = new google.maps.LatLng(-41.288889, 174.777222);
+    mapCenter = new google.maps.LatLng(-41.278889, 174.737222);
     style = 
     [
 	    {
@@ -199,7 +199,7 @@
               });
               return google.maps.event.addListener(v, "click", function() {
                 return relatedArticles.slideUp("slow", function() {
-                  var a, articleElem, articleElemWrapper, num, testpopover, _i, _len, _ref;
+                  var a, articleElem, articleElemWrapper, num, _i, _len, _ref;
                   relatedArticles.children("li").remove();
                   relatedArticles.children("a").remove();
                   relatedArticles.append("                                    <li class=\"nav-header\" id=\"relatedArticlesHeader\">                                        Showing " + data.Articles.length + " of " + data.Results + " for <b>" + k + "</b>                                    </li>");
@@ -218,9 +218,9 @@
                   }
                   relatedArticles.append("                                    <a id=\"CloseButton\" href=\"\">                                        <i class=\"icon-chevron-up icon-black\"></i>                                        Close                                    </a>                                    <a class=\"pull-right\" href=\"\">                                        Next                                        <i class=\"icon-chevron-right icon-black\"></i>                                    </a>                                    <a href=\"\" class=\"noHover pull-right\">                                        <i class=\"icon-chevron-left disabled icon-black\"></i>                                        <del>Previous</del>                                    </a>                                ");
                   relatedArticles.find("#CloseButton").click(function() {
-                    return relatedArticles.slideUp("slow");
+                    relatedArticles.slideUp("slow");
+                    return false;
                   });
-                  testpopover = $("<a id=\"helpButton\" href=\"#\" rel=\"popover\"	                                                data-content=\"                            	                        To <b>Find Artciles</b> I need you to do two things, firstly search for a keyword, then select a suburb by clicking on it.<br/>                            	                        <br/>                            	                        After clikcing on a suburb, i'll display it's articles in a menu on the left. <br/>                            	                        To get a <b>blurb</b>, hover over an article.<br/>                            	                        To find the <b>source</b>, click on an article.<br/>                            	                        <br/>                            	                        When you search for a keywork i'll shade the suburbs in relation to how many articles they are associated with. <br/>                            	                        <br/>                            	                        <b> Bright Red </b> for more, <b> Dark Red </b> for less. <br/>                            	                        <br/>                            	                        <img src='../img/scale.png'></img><br/>                            	                        <br/>                            	                        Now get started by typing a key work into the search box to your left and clicking on search.                            	                        \"                            	                    data-original-title=\"Help\">                            	                    Help?                                  </a>");
                   return relatedArticles.slideDown("slow");
                 });
               });
@@ -283,13 +283,5 @@
       return console.log("fail to fetch regions");
     }
   });
-
-  /*
-  $("#clear_regions").click ->
-      console.log "Clearing Regions"
-      
-      $.each regions, (k,v) ->
-          v.setMap null
-  */
 
 }).call(this);
