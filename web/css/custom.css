@@ -9,11 +9,26 @@
 
 
 #ajaxLoader{
-	padding:4px;
+    position: absolute; 
 	display:none;
-	padding:4px;
 	width:32px;
 	height:32px;
+    top: 25px; 
+    left: 254px; 
+    z-index: 100;
+    background-image:url("../img/ajax-loader2.gif");
+}
+
+#countDown {
+    position: absolute; 
+	display:none;
+	width:32px;
+	height:32px;
+    top: 28px; 
+    left: 254px; 
+    z-index: 110;
+    text-align:center;
+    color:#999999;
 }
 
 #over_map { 

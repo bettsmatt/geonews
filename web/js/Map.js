@@ -1,5 +1,5 @@
 (function() {
-  var SetupMap, googleMap, help, helpButton, mapCanvas, mapTip, menuWell, mousePos, regions, relatedArticles, relatedArticlesHeader, resultsSuburb, resultsWellington, scale;
+  var SetupMap, ajaxLoader, countDown, googleMap, help, helpButton, mapCanvas, mapTip, menuUp, menuWell, mousePos, regions, relatedArticles, relatedArticlesHeader, resultsSuburb, resultsWellington, scale;
 
   relatedArticles = $("#relatedArticlesList");
 
@@ -22,6 +22,12 @@
   helpButton.popover({
     placement: "right"
   });
+
+  ajaxLoader = $("#ajaxLoader");
+
+  countDown = $("#countDown");
+
+  menuUp = true;
 
   mapTip = $("<div class=\"myToolTip\" rel=\"tooltip\" title=\"Map tool tip\" style = \"\"></div>");
 
@@ -111,9 +117,16 @@
   });
 
   $("#search_term").click(function() {
-    var term;
-    term = $("#search_text_box").val();
-    console.log("Searching for term " + term);
+    var responcesLeft, term;
+    term = $("#search_text_box").val().replace(" ", "_");
+    responcesLeft = 57;
+    ajaxLoader.css({
+      display: "block"
+    });
+    countDown.css({
+      display: "block"
+    });
+    countDown.text("" + responcesLeft);
     return $.ajax({
       url: "http://localhost:8080/search/Wellington/" + term,
       dataType: "json",
@@ -133,6 +146,17 @@
             dataType: "json",
             success: function(data) {
               var cleanResults, color, colorf, hex, percent;
+              responcesLeft--;
+              countDown.text("" + responcesLeft);
+              if (responcesLeft === 0) {
+                ajaxLoader.css({
+                  display: "none"
+                });
+                countDown.css({
+                  display: "none"
+                });
+                console.log("Hiding");
+              }
               cleanResults = parseInt(data.Results.replace(/([a-zA-Z_,\.~-]+)/, ""));
               console.log("Success for " + k + " 0 " + cleanResults);
               v.setMap(googleMap);

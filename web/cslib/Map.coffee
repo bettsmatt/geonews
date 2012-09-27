@@ -16,6 +16,10 @@ help = $ "#over_map_help"
 helpButton = $ "#helpButton"
 helpButton.popover({placement:"right"})
 
+ajaxLoader = $ "#ajaxLoader"
+countDown = $ "#countDown"
+
+menuUp = true;
 # Record mouse movement, nessary to draw tool tips when clicking on overlays on the map
 
 mapTip = $ "<div class=\"myToolTip\" rel=\"tooltip\" title=\"Map tool tip\" style = \"\"></div>"
@@ -87,7 +91,6 @@ SetupMap = () ->
 	
 	new google.maps.Map elem, mapOptions
 	
-		
 googleMap = SetupMap()
 google.maps.event.addDomListener(window, "load", googleMap);
 
@@ -97,9 +100,15 @@ mapCanvas.css {height: "100%"}
 
 $("#search_term").click ->
 
-    term = $("#search_text_box").val()
-
-    console.log "Searching for term #{term}"
+    #Tidy up input
+    term = $("#search_text_box").val().replace(" ","_")
+    
+    # Keep track of the responces we have received
+    responcesLeft = 57;
+    ajaxLoader.css {display:"block"}
+    
+    countDown.css {display:"block"}
+    countDown.text "#{responcesLeft}"
     
     $.ajax
         url: "http://localhost:8080/search/Wellington/#{term}"
@@ -108,12 +117,8 @@ $("#search_term").click ->
         
             cleanTotal = parseInt data.Results.replace(/([a-zA-Z_,\.~-]+)/, "")
              
-             
             resultsWellington.text "Wellington | #{cleanTotal}"
-            #relatedArticles.children("li").remove()
-            #relatedArticles.append "<li><a href=\"#\">Wellington total: #{cleanTotal}</a></li>"
 
-                        
             $.each regions, (k,v) ->
                 v.setMap null
             
@@ -125,12 +130,21 @@ $("#search_term").click ->
                 $.ajax
                     url: "http://localhost:8080/search/#{safeName}/#{term}"
                     dataType: "json",
-                    success: (data) ->         
+                    success: (data) -> 
+                    
+
+                        #Check if we have all the responces back
+                        responcesLeft--
+                        countDown.text "#{responcesLeft}"                        
+                        
+                        if(responcesLeft == 0)
+                            ajaxLoader.css {display:"none"}
+                            countDown.css {display:"none"}
+                            console.log "Hiding"
+                                                        
                         cleanResults = parseInt data.Results.replace(/([a-zA-Z_,\.~-]+)/, "")
                         console.log "Success for #{k} 0 #{cleanResults}"
                         v.setMap googleMap
-                        
-
                         
                         # Solid Color if More results then Wellington probbly an error
                         if cleanResults > cleanTotal
@@ -194,11 +208,8 @@ $("#search_term").click ->
                                     articleElemWrapper = $ "<li> </li>"
                                     articleElemWrapper.append articleElem
                                     
-  
-                                    
                                     relatedArticles.append articleElemWrapper
                                     relatedArticles.append "<li class=\"divider\" style=\"margin-top:1px;margin-bottom:1px;\"></li>"
-                                    
                                     
                                 # menu controls
                                 relatedArticles.append "
@@ -220,12 +231,8 @@ $("#search_term").click ->
                                     relatedArticles.slideUp "slow"
                                     false
                                 
-
                                 relatedArticles.slideDown "slow"
-                                
-                                
-                                
-                                
+                                      
                     error: (data) -> 
                         console.log "fail"
 
