@@ -1,6 +1,5 @@
-geonews
-=======
+An application for geographically browsing news media and analysing trends.
 
-An application for geographically browsing news media and analyzing trends.
+Completed as an assignment in a third year interfaces course at the Victoria university of Wellington.
 
-Completed as an assignment in a third year interfaces course at the victoria university of wellington. 
+Video Demo available at: http://youtu.be/4k3zR5GmleI
